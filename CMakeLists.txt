@@ -28,6 +28,7 @@ set(SOURCE
     src/cpu/insts/Jmp.h
     src/cpu/insts/Mov-inl.h
     src/cpu/insts/Mov.h
+    src/cpu/insts/Util.h
     src/cpu/Cpu.cpp
     src/cpu/Cpu.h
     src/cpu/Immediate.cpp
@@ -67,6 +68,8 @@ add_library(${PROJECT_NAME}_lib ${SOURCE})
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME}_lib PROPERTY CXX_STANDARD 20)
+set_property(TARGET ${PROJECT_NAME} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+set_property(TARGET ${PROJECT_NAME}_lib PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_include_directories(${PROJECT_NAME}_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)

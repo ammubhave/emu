@@ -14,9 +14,11 @@ class Immediate {
  public:
   Immediate(InstructionFetcher fetcher, Opcode opcode, ModRm modrm);
 
-  uint16_t Asel() const;
+  uint32_t A() const;
 
-  uint16_t Aoff() const;
+  // uint16_t Asel() const;
+
+  // uint16_t Aoff() const;
 
   ImmediateOperand<uint16_t> op_v() const;
 

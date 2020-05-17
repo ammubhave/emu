@@ -7,6 +7,10 @@ enum class SystemSegmentDescriptorType {
   InactiveTss = 1,
   Ldt = 2,
   ActiveTss = 3,
+  CallGate = 4,
+  TaskGate = 5,
+  InterruptGate = 6,
+  TrapGate = 7,
 };
 
 enum class GateDescriptorType {
@@ -46,10 +50,33 @@ struct __attribute__((packed)) SegmentDescriptor {
     SegmentDescriptor::SystemSegmentDescriptorAccessByte system;
   } accessByte;
   uint16_t reserved;
+
+  bool isTypeConformingCodeSegment() const {
+    return accessByte.s == 1 && accessByte.data.ex && accessByte.data.ce;
+  }
+  bool isTypeNonConformingCodeSegment() const {
+    return accessByte.s == 1 & accessByte.data.ex && !accessByte.data.ce;
+  }
+  bool isTypeCallGate() const {
+    return accessByte.s == 0 &&
+           accessByte.system.type == SystemSegmentDescriptorType::CallGate;
+  }
+  bool isTypeTaskGate() const {
+    return accessByte.s == 0 &&
+           accessByte.system.type == SystemSegmentDescriptorType::TaskGate;
+  }
+  bool isTypeTaskStateSegment() const {
+    return accessByte.s == 0 &&
+           (accessByte.system.type == SystemSegmentDescriptorType::ActiveTss ||
+            accessByte.system.type == SystemSegmentDescriptorType::InactiveTss);
+  }
+  bool isPresent() const { return accessByte.p; }
 };
 static_assert(sizeof(SegmentDescriptor) == 8);
 
 union SegmentSelector {
+  SegmentSelector(uint16_t _value = 0) : value{_value} {}
+
   uint16_t value;
   struct __attribute__((packed)) {
     uint8_t rpl : 2;
@@ -59,11 +86,18 @@ union SegmentSelector {
 };
 static_assert(sizeof(SegmentSelector) == 2);
 
-struct __attribute__((packed)) ErrorCode {
-  bool ext : 1;
-  bool idt : 1;
-  bool ti : 1;  // 1=LDT 0=GDT
-  uint16_t index : 13;
+union ErrorCode {
+  struct __attribute__((packed)) {
+    bool ext : 1;
+    bool idt : 1;
+    bool ti : 1;  // 1=LDT 0=GDT
+    uint16_t index : 13;
+  };
+  uint16_t value;
+
+  ErrorCode(uint16_t _value) : value{_value} {}
+  ErrorCode(uint16_t _index, bool _ti, bool _idt, bool _ext)
+      : ext{_ext}, idt{_idt}, ti{_ti}, index{_index} {}
 };
 static_assert(sizeof(ErrorCode) == 2);
 
@@ -80,7 +114,7 @@ struct __attribute__((packed)) GateDescriptor {
 };
 static_assert(sizeof(GateDescriptor) == 8);
 
-struct Interrupt {
+struct __attribute__((packed)) Interrupt {
   enum class Type : uint8_t {
     DivideErrorException = 0,
     SingleStepInterrupt,
@@ -101,6 +135,11 @@ struct Interrupt {
     SegmentOverrunException = 13,
     ProcessorExtensionErrorInterrupt = 16,
   };
+
+  Interrupt(Type _type, ErrorCode _errorCode = {0})
+      : type{_type}, errorCode{_errorCode} {}
+  Interrupt(uint8_t _number, ErrorCode _errorCode = {0})
+      : number{_number}, errorCode{_errorCode} {}
 
   union {
     Type type;

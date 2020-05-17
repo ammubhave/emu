@@ -14,5 +14,5 @@ uint16_t& Registers::reg(size_t i) {
 
 uint16_t& Registers::sreg(size_t i) {
   assert(i < 4);
-  return segmentRegisters[i];
+  return segmentRegisters[i].selector.value;
 }

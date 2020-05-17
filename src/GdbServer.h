@@ -213,13 +213,13 @@ class GdbServer {
       case 9:
         return cpu_.regs_.flags.value;
       case 10:
-        return cpu_.regs_.cs;
+        return cpu_.regs_.cs.selector.value;
       case 11:
-        return cpu_.regs_.ss;
+        return cpu_.regs_.ss.selector.value;
       case 12:
-        return cpu_.regs_.ds;
+        return cpu_.regs_.ds.selector.value;
       case 13:
-        return cpu_.regs_.es;
+        return cpu_.regs_.es.selector.value;
       case 14:
         return 0;
       case 15:

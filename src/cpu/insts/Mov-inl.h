@@ -12,6 +12,9 @@ MovInstruction<Op1, Op2>::MovInstruction(Op1 dst, Op2 src)
 
 template <typename Op1, typename Op2>
 void MovInstruction<Op1, Op2>::execute(Cpu& cpu) {
+  auto Source = src_;
+  auto Destination = dst_;
+
   if constexpr (std::is_same_v<Op1, SegmentRegisterOperand>) {
     assert(dst_.seg() != Segment::CS);
     // TODO: If op1 is SS, inhibit interrupts for one instruction.

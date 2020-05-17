@@ -49,11 +49,10 @@ void Cpu::step() noexcept {
             opcode.op_r<uint16_t>(*this), imm.op_v());
         break;
       case 0xe9:
-        inst = std::make_unique<JmpNearRelativeInstruction>(imm.v());
+        inst = std::make_unique<JmpInstruction<true, true, true>>(imm.v());
         break;
       case 0xea:
-        inst = std::make_unique<JmpFarAbsoluteDirectInstruction>(imm.Asel(),
-                                                                 imm.Aoff());
+        inst = std::make_unique<JmpInstruction<false, false, true>>(imm.A());
         break;
       case 0xfa:
         inst = std::make_unique<CliInstruction>();
@@ -69,7 +68,7 @@ void Cpu::step() noexcept {
     inst->execute(*this);
   } catch (Interrupt interrupt) {
     try {
-      std::cerr << interrupt.number << std::endl;
+      std::cerr << "Interrupt: " << (int)interrupt.number << std::endl;
       exit(1);
     } catch (Interrupt interrupt) {
       // double fault
@@ -78,35 +77,12 @@ void Cpu::step() noexcept {
 }
 
 template <typename T>
-T Cpu::readPhysicalMemory(size_t addr) {
-  T v{0};
-  for (size_t i = 0; i < sizeof(T); ++i) {
-    v |= bus_.readMemory(addr + i) << (i * 8);
-  }
-  return v;
-}
-template uint8_t Cpu::readPhysicalMemory(size_t);
-template uint16_t Cpu::readPhysicalMemory(size_t);
-template uint32_t Cpu::readPhysicalMemory(size_t);
-
-template <typename T>
-void Cpu::writePhysicalMemory(size_t addr, T v) {
-  for (size_t i = 0; i < sizeof(T); ++i) {
-    bus_.writeMemory(addr++, static_cast<uint8_t>(v));
-    v >>= 8;
-  }
-}
-template void Cpu::writePhysicalMemory(size_t, uint8_t);
-template void Cpu::writePhysicalMemory(size_t, uint16_t);
-template void Cpu::writePhysicalMemory(size_t, uint32_t);
-
-template <typename T>
-T Cpu::readLogicalMemory(Segment seg, uint16_t offset) {
+T Cpu::readLogicalMemory(Segment seg, uint16_t offset, size_t delta) {
   // TODO: if real mode and offset is 0xffff and reading a word, throw fault
 
   std::array<size_t, sizeof(T)> addrs;
   for (size_t i = 0; i < sizeof(T); ++i) {
-    addrs[i] = paddr(seg, offset + i, MemoryOperationType::Read);
+    addrs[i] = paddr(seg, offset + delta + i, MemoryOperationType::Read);
   }
   T v{0};
   for (size_t i = 0; i < sizeof(T); ++i) {
@@ -114,26 +90,26 @@ T Cpu::readLogicalMemory(Segment seg, uint16_t offset) {
   }
   return v;
 }
-template uint8_t Cpu::readLogicalMemory(Segment, uint16_t);
-template uint16_t Cpu::readLogicalMemory(Segment, uint16_t);
-template uint32_t Cpu::readLogicalMemory(Segment, uint16_t);
+template uint8_t Cpu::readLogicalMemory(Segment, uint16_t, size_t);
+template uint16_t Cpu::readLogicalMemory(Segment, uint16_t, size_t);
+template uint32_t Cpu::readLogicalMemory(Segment, uint16_t, size_t);
 
 template <typename T>
-void Cpu::writeLogicalMemory(Segment seg, uint16_t offset, T v) {
+void Cpu::writeLogicalMemory(Segment seg, uint16_t offset, T v, size_t delta) {
   // TODO: if real mode and offset is 0xffff and reading a word, throw fault
 
   std::array<size_t, sizeof(T)> addrs;
   for (size_t i = 0; i < sizeof(T); ++i) {
-    addrs[i] = paddr(seg, offset + i, MemoryOperationType::Write);
+    addrs[i] = paddr(seg, offset + delta + i, MemoryOperationType::Write);
   }
   for (size_t i = 0; i < sizeof(T); ++i) {
     writePhysicalMemory<uint8_t>(addrs[i], static_cast<uint8_t>(v));
     v >>= 8;
   }
 }
-template void Cpu::writeLogicalMemory(Segment, uint16_t, uint8_t);
-template void Cpu::writeLogicalMemory(Segment, uint16_t, uint16_t);
-template void Cpu::writeLogicalMemory(Segment, uint16_t, uint32_t);
+template void Cpu::writeLogicalMemory(Segment, uint16_t, uint8_t, size_t);
+template void Cpu::writeLogicalMemory(Segment, uint16_t, uint16_t, size_t);
+template void Cpu::writeLogicalMemory(Segment, uint16_t, uint32_t, size_t);
 
 size_t Cpu::instructionFetchAddress() const {
   return paddr(Segment::CS, regs_.ip, MemoryOperationType::Execute);
@@ -146,11 +122,13 @@ size_t Cpu::paddr(Segment segment, uint16_t offset,
   } else {
     if (offset > 0xffff) {
       if (segment == Segment::SS)
-        throw Interrupt{{Interrupt::Type::StackSegmentOverrunOrNotPresent}, {}};
+        throw Interrupt{Interrupt::Type::StackSegmentOverrunOrNotPresent};
       else
-        throw Interrupt{{Interrupt::Type::GeneralProtectionFault}, {}};
+        throw Interrupt{Interrupt::Type::GeneralProtectionFault};
     }
-    return ((size_t)regs_.segmentRegisters[(size_t)segment] << 4) + offset;
+    return ((size_t)regs_.segmentRegisters[(size_t)segment].selector.value
+            << 4) +
+           offset;
   }
 }
 

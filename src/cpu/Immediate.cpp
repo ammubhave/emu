@@ -29,9 +29,11 @@ Immediate::Immediate(InstructionFetcher fetcher, Opcode opcode, ModRm modrm) {
   }
 }
 
-uint16_t Immediate::Asel() const { return static_cast<uint16_t>(imm >> 16); }
+uint32_t Immediate::A() const { return static_cast<uint32_t>(imm); }
 
-uint16_t Immediate::Aoff() const { return static_cast<uint16_t>(imm); }
+// uint16_t Immediate::Asel() const { return static_cast<uint16_t>(imm >> 16); }
+
+// uint16_t Immediate::Aoff() const { return static_cast<uint16_t>(imm); }
 
 uint16_t Immediate::v() const { return static_cast<uint16_t>(imm); };
 
