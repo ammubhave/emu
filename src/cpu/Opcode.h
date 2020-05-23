@@ -6,15 +6,15 @@ namespace emu::cpu {
 
 class Cpu;
 class InstructionFetcher;
-template <typename T>
-class RegisterOperand;
+// template <typename T>
+// class RegisterOperand;
 
 class Opcode {
  public:
   Opcode(InstructionFetcher fetcher);
 
-  template <typename T>
-  RegisterOperand<T> op_r(Cpu& cpu) const;
+  // template <typename T>
+  // RegisterOperand<T> op_r(Cpu& cpu) const;
 
   uint8_t pf[4];
   bool of;

@@ -12,7 +12,7 @@ class Instruction {
  public:
   virtual ~Instruction() = default;
   virtual void execute(Cpu& cpu) = 0;
-  virtual std::string str() = 0;
+  virtual std::string str() const noexcept = 0;
 };
 
 }  // namespace insts

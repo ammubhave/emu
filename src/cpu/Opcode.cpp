@@ -1,7 +1,7 @@
 #include "Opcode.h"
 
 #include "cpu/InstructionFetcher.h"
-#include "cpu/RegisterOperand.h"
+// #include "cpu/RegisterOperand.h"
 
 namespace emu::cpu {
 
@@ -51,12 +51,12 @@ prefixLoop:
   }
 }
 
-template <typename T>
-RegisterOperand<T> Opcode::op_r(Cpu& cpu) const {
-  return RegisterOperand<T>(cpu, r);
-}
+// template <typename T>
+// RegisterOperand<T> Opcode::op_r(Cpu& cpu) const {
+//   return RegisterOperand<T>(cpu, r);
+// }
 
-template RegisterOperand<uint8_t> Opcode::op_r(Cpu&) const;
-template RegisterOperand<uint16_t> Opcode::op_r(Cpu&) const;
+// template RegisterOperand<uint8_t> Opcode::op_r(Cpu&) const;
+// template RegisterOperand<uint16_t> Opcode::op_r(Cpu&) const;
 
 }  // namespace emu::cpu

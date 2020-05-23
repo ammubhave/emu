@@ -2,6 +2,24 @@
 
 #include <cstdint>
 
+// 00: 8086
+// 01: 80186
+// 02: 80286
+// 03: 80386
+// 04: 80486
+// P1 (05): Pentium (1)
+// PX (06): Pentium with MMX
+// PP (07): Pentium Pro
+// P2 (08): Pentium II
+// P3 (09): Pentium III
+// P4 (10): Pentium 4
+// C1 (11): Core (1)
+// C2 (12): Core 2
+// C7 (13): Core i7
+// IT (99): Itanium (only geek editions)
+
+static constexpr size_t PROC_CODE = 0;
+
 enum class SystemSegmentDescriptorType {
   Invalid = 0,
   InactiveTss = 1,
@@ -55,7 +73,7 @@ struct __attribute__((packed)) SegmentDescriptor {
     return accessByte.s == 1 && accessByte.data.ex && accessByte.data.ce;
   }
   bool isTypeNonConformingCodeSegment() const {
-    return accessByte.s == 1 & accessByte.data.ex && !accessByte.data.ce;
+    return accessByte.s == 1 && accessByte.data.ex && !accessByte.data.ce;
   }
   bool isTypeCallGate() const {
     return accessByte.s == 0 &&

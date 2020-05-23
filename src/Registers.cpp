@@ -1,8 +1,9 @@
 #include "Registers.h"
 
+#include <iostream>
 template <>
 uint8_t& Registers::reg(size_t i) {
-  assert((i & 7) == 0);
+  assert((i & ~7) == 0);
   i = ((i & 3) << 1) + (i >> 2);
   return generalPurposeRegisters8[i];
 }

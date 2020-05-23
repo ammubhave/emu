@@ -6,7 +6,7 @@
 
 template <size_t T>
 class Ram : public MemoryBusOperations {
-  private:
+ private:
   uint8_t readMemory(size_t address) final;
   void writeMemory(size_t address, uint8_t value) final;
 

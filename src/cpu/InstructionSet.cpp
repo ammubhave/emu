@@ -360,6 +360,13 @@ size_t hasImmediate(Opcode opcode, ModRm modrm) {
     case 0x83:
     case 0xa8:
     case 0xb0:
+    case 0xb1:
+    case 0xb2:
+    case 0xb3:
+    case 0xb4:
+    case 0xb5:
+    case 0xb6:
+    case 0xb7:
     case 0xc0:
     case 0xc1:
     case 0xc6:
@@ -389,6 +396,13 @@ size_t hasImmediate(Opcode opcode, ModRm modrm) {
     case 0x81:
     case 0xa9:
     case 0xb8:
+    case 0xb9:
+    case 0xba:
+    case 0xbb:
+    case 0xbc:
+    case 0xbd:
+    case 0xbe:
+    case 0xbf:
     case 0xc2:
     case 0xc7:
     case 0xc8:

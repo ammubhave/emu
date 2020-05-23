@@ -15,31 +15,19 @@ class Cpu {
   Cpu(Bus& bus) noexcept;
 
   void step() noexcept;
+  void enableDebug() { debugEnabled_ = true; }
 
   template <typename T>
-  T readPhysicalMemory(size_t addr) {
-    T v;
-    std::array<uint8_t, sizeof(T)> data;
-    for (size_t i = 0; i < sizeof(T); ++i) {
-      data[i] = readPhysicalMemory<uint8_t>(addr + i);
-    }
-    std::memcpy(&v, data.data(), data.size());
-    return v;
-  }
+  T readPhysicalMemory(size_t addr);
 
   template <typename T>
-  void writePhysicalMemory(size_t addr, T v) {
-    for (size_t i = 0; i < sizeof(T); ++i) {
-      writePhysicalMemory(addr++, static_cast<uint8_t>(v));
-      v >>= 8;
-    }
-  }
+  void writePhysicalMemory(size_t addr, T v);
 
   template <typename T>
-  T readLogicalMemory(Segment seg, uint16_t offset, size_t delta = 0);
+  T readLogicalMemory(Segment seg, uint16_t offset);
 
   template <typename T>
-  void writeLogicalMemory(Segment seg, uint16_t offset, T v, size_t delta = 0);
+  void writeLogicalMemory(Segment seg, uint16_t offset, T v);
 
   size_t instructionFetchAddress() const;
 
@@ -48,16 +36,9 @@ class Cpu {
 
   Registers regs_{};
   Bus& bus_;
+  bool debugEnabled_{false};
 };
 
-template <>
-uint8_t Cpu::readPhysicalMemory(size_t addr) {
-  return bus_.readMemory(addr);
-}
-
-template <>
-void Cpu::writePhysicalMemory(size_t addr, uint8_t v) {
-  bus_.writeMemory(addr, static_cast<uint8_t>(v));
-}
-
 }  // namespace emu::cpu
+
+#include "Cpu-inl.h"

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.17)
 
 project(emu)
 
@@ -19,39 +19,45 @@ add_custom_command(
     COMMENT "Generating code for InstructionSet.cpp"
 )
 
-set(SOURCE
+include(cmake/gen.cmake)
+set(SOURCE ${SOURCE}
     src/cpu/insts/AllInstructions.h
-    src/cpu/insts/Cli.cpp
-    src/cpu/insts/Cli.h
     src/cpu/insts/Instruction.h
-    src/cpu/insts/Jmp.cpp
-    src/cpu/insts/Jmp.h
-    src/cpu/insts/Mov-inl.h
-    src/cpu/insts/Mov.h
+    src/cpu/insts/Illegal.cpp
+    src/cpu/insts/Illegal.h
     src/cpu/insts/Util.h
+    src/cpu/operands/ImmediateOperand.cpp
+    src/cpu/operands/ImmediateOperand.h
+    src/cpu/operands/MemoryOperand.cpp
+    src/cpu/operands/MemoryOperand.h
+    src/cpu/operands/ModRmOperand.cpp
+    src/cpu/operands/ModRmOperand.h
+    src/cpu/operands/RegisterOperand.cpp
+    src/cpu/operands/RegisterOperand.h
+    src/cpu/operands/RelativeOffsetOperand.cpp
+    src/cpu/operands/RelativeOffsetOperand.h
+    src/cpu/operands/SegmentRegisterOperand.cpp
+    src/cpu/operands/SegmentRegisterOperand.h
     src/cpu/Cpu.cpp
     src/cpu/Cpu.h
+    src/cpu/Cpu-inl.h
     src/cpu/Immediate.cpp
     src/cpu/Immediate.h
-    src/cpu/ImmediateOperand.cpp
-    src/cpu/ImmediateOperand.h
+    src/cpu/InstructionDecoder.cpp
+    src/cpu/InstructionDecoder.h
     src/cpu/InstructionFetcher.cpp
     src/cpu/InstructionFetcher.h
     src/cpu/InstructionSet.cpp
     src/cpu/InstructionSet.h
-    src/cpu/MemoryOperand.cpp
-    src/cpu/MemoryOperand.h
     src/cpu/ModRm.cpp
     src/cpu/ModRm.h
-    src/cpu/ModRmOperand.cpp
-    src/cpu/ModRmOperand.h
     src/cpu/Opcode.cpp
     src/cpu/Opcode.h
-    src/cpu/RegisterOperand.cpp
-    src/cpu/RegisterOperand.h
-    src/cpu/SegmentRegisterOperand.cpp
-    src/cpu/SegmentRegisterOperand.h
     src/cpu/Types.h
+    src/peripherals/Cmos.cpp
+    src/peripherals/Cmos.h
+    src/peripherals/Ps2.cpp
+    src/peripherals/Ps2.h
     src/Bus.cpp
     src/Bus.h
     src/GdbServer.h

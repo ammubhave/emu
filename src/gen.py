@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 import os
 
 tree = ET.parse(os.path.join(os.path.dirname(
-    os.path.realpath(__file__)), 'x86reference.xml'))
+    os.path.realpath(__file__)), 'py/x86reference.xml'))
 root = tree.getroot()
 assert(root.tag == 'x86reference')
 
@@ -80,6 +80,10 @@ def get_has_immediate(opcodes, opcodesType):
                     _has_immediate = None
 
                     ops = list(syntax)[1:]
+
+                    has_Z = any(
+                        [op.find('./a') is not None and op.find('./a').text == 'Z' for syntax in syntaxs for op in list(syntax)[1:]])
+
                     for op in ops:
                         a = op.find('./a')
                         if a is None:
@@ -107,6 +111,9 @@ def get_has_immediate(opcodes, opcodesType):
 
         if has_immediate:
             has_immediate_cases[has_immediate].append(po)
+            if has_Z:
+                for i in range(1, 8):
+                    has_immediate_cases[has_immediate].append(po + i)
 
     has_immediate_str = ""
     for count in sorted(has_immediate_cases.keys()):
@@ -174,4 +181,53 @@ size_t hasImmediate(Opcode opcode, ModRm modrm) {{
 }}
 
 }}  // namespace emu::cpu""")
+f.close()
+
+# instructions = {}
+
+
+def gen_instructions(opcodes, opcodesType):
+    decoder_cases = ""
+    assert(opcodes is not None)
+    for pri_opcd in opcodes:
+        assert(pri_opcd.tag == 'pri_opcd')
+        po = int(pri_opcd.attrib['value'], 16)
+
+        for entry in pri_opcd.findall('./entry'):
+            assert(entry.tag == 'entry')
+            if entry.attrib.get('attr', '') == 'invd':
+                continue
+            syntaxs = entry.findall('./syntax')
+            assert(len(syntaxs) > 0)
+            for syntax in syntaxs:
+                _has_modrm = None
+
+                if entry.find('./opcd_ext') is not None:
+                    _has_modrm = True
+
+                ops = list(syntax)[1:]
+                for op in ops:
+                    a = op.find('./a')
+                    if a is None:
+                        continue
+                    if a.text in ('C', 'D', 'E', 'ES', 'EST', 'G', 'H', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W'):
+                        _has_modrm = True
+                        break
+
+                if _has_modrm is None:
+                    _has_modrm = False
+
+                if has_modrm is None:
+                    has_modrm = _has_modrm
+                elif has_modrm != _has_modrm and not (opcodesType == 'two' and po == 0xb8):
+                    print(ET.dump(pri_opcd))
+
+        if has_modrm and not (opcodesType == 'two' and po == 0xb8):
+            has_modrm_cases += ("    " if opcodesType ==
+                                'two' else "") + "    case " + hex(po) + ":\n"
+    return has_modrm_cases
+
+
+# f = open(os.path.join(os.path.dirname(
+#     os.path.realpath(__file__)), 'cpu/insts/'), 'w')
 f.close()

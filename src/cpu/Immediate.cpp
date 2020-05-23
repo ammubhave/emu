@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "cpu/ImmediateOperand.h"
+// #include "cpu/ImmediateOperand.h"
 #include "cpu/InstructionFetcher.h"
 #include "cpu/InstructionSet.h"
 #include "cpu/ModRm.h"
@@ -29,20 +29,21 @@ Immediate::Immediate(InstructionFetcher fetcher, Opcode opcode, ModRm modrm) {
   }
 }
 
-uint32_t Immediate::A() const { return static_cast<uint32_t>(imm); }
+// uint32_t Immediate::A() const { return static_cast<uint32_t>(imm); }
 
-// uint16_t Immediate::Asel() const { return static_cast<uint16_t>(imm >> 16); }
+// // uint16_t Immediate::Asel() const { return static_cast<uint16_t>(imm >>
+// 16); }
 
-// uint16_t Immediate::Aoff() const { return static_cast<uint16_t>(imm); }
+// // uint16_t Immediate::Aoff() const { return static_cast<uint16_t>(imm); }
 
-uint16_t Immediate::v() const { return static_cast<uint16_t>(imm); };
+// uint16_t Immediate::v() const { return static_cast<uint16_t>(imm); };
 
-ImmediateOperand<uint16_t> Immediate::op_v() const { return v(); };
+// ImmediateOperand<uint16_t> Immediate::op_v() const { return v(); };
 
-uint16_t Immediate::bs() const {
-  return (uint16_t)(int16_t)(int8_t)(uint8_t)imm;
-}
+// uint16_t Immediate::bs() const {
+//   return (uint16_t)(int16_t)(int8_t)(uint8_t)imm;
+// }
 
-ImmediateOperand<uint16_t> Immediate::op_bs() const { return bs(); };
+// ImmediateOperand<uint16_t> Immediate::op_bs() const { return bs(); };
 
 }  // namespace emu::cpu

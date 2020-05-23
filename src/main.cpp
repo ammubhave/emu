@@ -6,8 +6,13 @@
 #include "Ram.h"
 #include "Rom.h"
 #include "cpu/Cpu.h"
+#include "peripherals/Cmos.h"
+#include "peripherals/Ps2.h"
 
 const uint64_t CPU_FREQUENCY = 25000000;
+
+using namespace emu::peripherals::cmos;
+using namespace emu::peripherals::ps2;
 
 int main(int /* argc */, const char*[] /* argv */) {
   sf::RenderWindow win(sf::VideoMode(200, 200), "Emu");
@@ -20,7 +25,14 @@ int main(int /* argc */, const char*[] /* argv */) {
   Rom<0x10000> biosRom{"/Users/amol/Documents/code/emu-rs/rom/bios.bin"};
   bus.addMemoryRange(0xf0000, &biosRom);
 
+  Cmos cmos;
+  bus.addIoRange(0x70, &cmos);
+
+  Ps2 ps2;
+  bus.addIoRange(0x60, &cmos);
+
   Cpu cpu{bus};
+  cpu.enableDebug();
 
   GdbServer gdbServer{cpu};
 
@@ -34,7 +46,6 @@ int main(int /* argc */, const char*[] /* argv */) {
     }
 
     if (cycles % (CPU_FREQUENCY / 60)) {
-      // std::cout << ".";
       win.clear();
       win.display();
     }
