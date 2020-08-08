@@ -12,20 +12,20 @@ if __name__ == "__main__":
         os.path.realpath(__file__)), '../cpu/InstructionDecoder.cpp'), 'w')
 
     f.write("""
-#include "InstructionDecoder.h"
+# include "InstructionDecoder.h"
 
-#include "cpu/Cpu.h"
-#include "cpu/InstructionFetcher.h"
-#include "cpu/Immediate.h"
-#include "cpu/ModRm.h"
-#include "cpu/Opcode.h"
-#include "cpu/insts/AllInstructions.h"
-#include "cpu/operands/ImmediateOperand.h"
-#include "cpu/operands/MemoryOperand.h"
-#include "cpu/operands/ModRmOperand.h"
-#include "cpu/operands/RegisterOperand.h"
-#include "cpu/operands/RelativeOffsetOperand.h"
-#include "cpu/operands/SegmentRegisterOperand.h"
+# include "cpu/Cpu.h"
+# include "cpu/InstructionFetcher.h"
+# include "cpu/Immediate.h"
+# include "cpu/ModRm.h"
+# include "cpu/Opcode.h"
+# include "cpu/insts/AllInstructions.h"
+# include "cpu/operands/ImmediateOperand.h"
+# include "cpu/operands/MemoryOperand.h"
+# include "cpu/operands/ModRmOperand.h"
+# include "cpu/operands/RegisterOperand.h"
+# include "cpu/operands/RelativeOffsetOperand.h"
+# include "cpu/operands/SegmentRegisterOperand.h"
 
 using namespace emu::cpu::insts;
 
@@ -46,92 +46,179 @@ switch (opcode.po) {\n""")
     root = tree.getroot()
     assert(root.tag == 'x86reference')
 
-    data = defaultdict(lambda: {})
+    def parse_pri_opcds(pri_opcds):
+        data = defaultdict(lambda: defaultdict(lambda: {
+            'hasZ': False,
+            'so': defaultdict(lambda: {
+                'opcd_ext': defaultdict(lambda: {
+                    'pref': defaultdict(lambda: {
+                        'proc_start': defaultdict(lambda: {
+                            'syntax': [],
+                        })
+                    })
+                })
+            })
+        }))
 
-    po_has_Z = set()
+        for pri_opcd in root.find('./one-byte'):
+            assert(pri_opcd.tag == 'pri_opcd')
+            po = int(pri_opcd.attrib['value'], 16)
 
-    for pri_opcd in root.find('./one-byte'):
-        assert(pri_opcd.tag == 'pri_opcd')
-        po = int(pri_opcd.attrib['value'], 16)
-        if po not in whitelisted_opcodes:
-            continue
-
-        data[po] = defaultdict(lambda: defaultdict(lambda: {}))
-
-        entries = pri_opcd.findall('./entry')
-
-        for entry in pri_opcd.findall('./entry'):
-            pref = entry.find('./pref')
-
-            opcd_ext = entry.find('./opcd_ext')
-            if opcd_ext is not None:
-                opcd_ext = opcd_ext.text
-
-            proc_start = entry.find('./proc_start')
-            if proc_start is None:
-                proc_start = 0
-            else:
-                proc_start = int(proc_start.text)
-
-            data[po][proc_start][opcd_ext]
-
-            if entry.attrib.get('attr', '') == 'invd':
-                data[po][proc_start][opcd_ext] = {
-                    'type': 'invd'
-                }
+            if po not in whitelisted_opcodes:
                 continue
-            syntaxs = entry.findall('./syntax')
 
-            if len(syntaxs) > 1:
-                if po in (0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x7a, 0x7b, 0x7c, 0x7d, 0x7e, 0x7f, 0xd0, 0xd1, 0xd2, 0xd3):
-                    syntaxs = [syntaxs[0]]
-            assert(len(syntaxs) == 1)
+            for entry in pri_opcd.findall('./entry'):
+                so = entry.find('./sec_opcd')
+                if so is not None:
+                    so = so.text
 
-            has_Z = any(
-                [op.find('./a') is not None and op.find('./a').text == 'Z' for syntax in syntaxs for op in list(syntax)[1:]])
-            if has_Z:
-                po_has_Z.add(po)
+                pref = entry.find('./pref')
+                if pref is not None:
+                    pref = pref.text
 
-            for syntax in syntaxs:
-                #     assert(entry.find('./opcd_ext') is None)
-                mnem = list(syntax)[0]
-                data[po][proc_start][opcd_ext] = {
-                    'type': 'normal',
-                    'mnem': mnem.text,
-                    'ops': [],
-                }
+                opcd_ext = entry.find('./opcd_ext')
+                if opcd_ext is not None:
+                    opcd_ext = opcd_ext.text
 
-                ops = list(syntax)[1:]
-                for op in ops:
-                    a = op.find('./a')
-                    t = op.find('./t')
+                proc_start = entry.find('./proc_start')
+                if proc_start is not None:
+                    proc_start = int(proc_start.text)
+                else:
+                    proc_start = 0
 
-                    if a is None and 'type' in op.attrib:
-                        t = op.attrib['type']
+                # data[po][proc_start][opcd_ext]
 
-                    if a is not None:
-                        assert(t is not None)
-                        data[po][proc_start][opcd_ext]['ops'].append(
-                            (a.text, t.text))
-                    elif op.text in ('AL', 'eAX', 'rAX', 'DX', 'AH', 'CL'):
-                        data[po][proc_start][opcd_ext]['ops'].append(
-                            (op.text, t))
-                    elif op.text == '1':
-                        data[po][proc_start][opcd_ext]['ops'].append(
-                            ('1', 'b'))
-                    else:
-                        print(f"Unknown a {a} {op.text} {op.attrib}")
-                        exit(1)
+                if entry.attrib.get('attr', '') == 'invd':
+                    entry_data = {
+                        'type': 'invd',
+                    }
+                    continue
+                else:
+                    syntaxs = entry.findall('./syntax')
+
+                    # if len(syntaxs) > 1:
+                    #     if po in (0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x7a, 0x7b, 0x7c, 0x7d, 0x7e, 0x7f, 0xd0, 0xd1, 0xd2, 0xd3):
+                    #         syntaxs = [syntaxs[0]]
+                    # elif po == 0x8c:
+                    #     syntaxs = [syntaxs[0]]
+                    # if len(syntaxs) != 1:
+                    #     print(po)
+                    #     assert(len(syntaxs) == 1)
+
+                    if any(
+                            [op.find('./a') is not None and op.find('./a').text == 'Z' for syntax in syntaxs for op in list(syntax)[1:]]):
+                        data[po]['hasZ'] = True
+
+                    for syntax in syntaxs:
+                        mnem = list(syntax)[0]
+                        entry_data = {
+                            'type': 'normal',
+                            'mnem': mnem.text,
+                            'ops': [],
+                        }
+
+                        for op in list(syntax)[1:]:
+                            a = op.find('./a')
+                            t = op.find('./t')
+
+                            if a is None and 'type' in op.attrib:
+                                t = op.attrib['type']
+
+                            if a is not None:
+                                assert(t is not None)
+                                data[po][proc_start][opcd_ext]['ops'].append(
+                                    (a.text, t.text))
+                            elif op.text in ('AL', 'eAX', 'rAX', 'DX', 'AH', 'CL'):
+                                data[po][proc_start][opcd_ext]['ops'].append(
+                                    (op.text, t))
+                            elif op.text == '1':
+                                data[po][proc_start][opcd_ext]['ops'].append(
+                                    ('1', 'b'))
+                            else:
+                                print(f"Unknown a {a} {op.text} {op.attrib}")
+                                exit(1)
+                proc_end = entry.find('./proc_end')
+                if proc_end is not None:
+                    proc_end = int(proc_end.text)
+                else:
+                    proc_end = 0
+                entry_data['proc_end'] = proc_end
+                data[po]['so'][so]['opcd_ext'][opcd_ext]['pref'][pref]['proc_start'][proc_start] = entry_data
+
+    data = (parse_pri_opcds(root.find('./one-byte')),
+            parse_pri_opcds(root.find('./two-byte')))
 
     mnem_data = defaultdict(lambda: [])
 
     indent = "    "
     for po in sorted(data.keys()):
+        po_data = data[po]
+
         f.write(f"{indent}case 0x{po:x}:\n")
-        if po in po_has_Z:
+        if po_data['hasZ']:
             for i in range(1, 8):
                 f.write(f"{indent}case 0x{po+i:x}:\n")
         indent += "  "
+
+        f.write(f"{indent}switch (opcode.so) {{\n")
+        indent += "  "
+
+        for so, so_data in data[po]['so']:
+            if so is None:
+                f.write(f'{indent}default:\n')
+            else:
+                f.write(f'{indent}case 0x{so:x}:\n')
+            indent += "  "
+
+            f.write(f"{indent}switch (modrm.o) {{\n")
+            indent += "  "
+            for opcd_ext, opcd_ext_data in so_data['opcd_ext']:
+                if opcd_ext is None:
+                    f.write(f'{indent}default:\n')
+                else:
+                    f.write(f'{indent}case 0x{opcd_ext:x}:\n')
+                indent += "  "
+
+                f.write(f'{indent}switch (opcode.pref) {{\n')
+                indent += "  "
+
+                for pref, pref_data in opcd_ext_data['pref']:
+                    if pref is None:
+                        f.write(f'{indent}default:\n')
+                    else:
+                        f.write(f'{indent}case 0x{pref:x}:\n')
+                    indent += "  "
+
+                    for i, proc_start in enumerate(reversed(sorted(pref_data['proc_start'].keys()))):
+                        proc_start_data = pref_data['proc_start'][proc_start]
+
+                        if i == 0:
+                            f.write(
+                                f"{indent}if constexpr (PROC_CODE >= {proc_start}\n")
+                        else:
+                            f.write(
+                                f"{indent}}} else if (PROC_CODE >= {proc_start}\n")
+                        if proc_start_data['proc_end'] is not None:
+                            f.write(
+                                f" && PROC_CODE <= {proc_start_data['proc_end']}) {{\n")
+                        else:
+                            f.write(") {{\n")
+                        indent += "  "
+
+                        indent = indent[:-2]
+                    f.write("}}\n")
+
+                    indent = indent[:-2]
+
+                indent = indent[:-2]
+                f.write("{indent}}}\n")
+                indent = indent[:-2]
+            indent = indent[:-2]
+            f.write("{indent}}}\n")
+            indent = indent[:-2]
+
+        indent = indent[:-2]
+        f.write("{indent}}}\n")
 
         for i, proc_start in enumerate(reversed(sorted(data[po].keys()))):
             if i == 0:
@@ -258,9 +345,9 @@ switch (opcode.po) {\n""")
             os.path.realpath(__file__)), f'../cpu/insts/gen/{mnem}.h'), 'w')
         f.write(f"""#pragma once
 
-#include <fmt/format.h>
+# include <fmt/format.h>
 
-#include "cpu/insts/Instruction.h"
+# include "cpu/insts/Instruction.h"
 
 namespace emu::cpu::insts {{
 {"" if nops == 0 else f"{chr(10)}template <{', '.join([f'typename Op{i}' for i in range(1, nops+1)])}>"}
@@ -287,8 +374,8 @@ class {mnem} : public Instruction {{
                 os.path.realpath(__file__)), f'../cpu/insts/{mnem}.cpp'), 'w')
             f.write(f"""#include "gen/{mnem}.h"
 
-#include "cpu/Cpu.h"
-#include "cpu/insts/Util.h"
+# include "cpu/Cpu.h"
+# include "cpu/insts/Util.h"
 
 namespace emu::cpu::insts {{
 {"" if nops == 0 else f"{chr(10)}template <{', '.join([f'typename Op{i}' for i in range(1, nops+1)])}>"}
@@ -307,12 +394,12 @@ void {mnem}{"" if nops == 0 else f"<{', '.join([f'Op{i}' for i in range(1, nops+
                 os.path.realpath(__file__)), f'../cpu/insts/gen/{mnem}.cpp'), 'w')
             f.write(f"""#include "{mnem}.h"
 
-#include "cpu/operands/ImmediateOperand.h"
-#include "cpu/operands/MemoryOperand.h"
-#include "cpu/operands/ModRmOperand.h"
-#include "cpu/operands/RegisterOperand.h"
-#include "cpu/operands/RelativeOffsetOperand.h"
-#include "cpu/operands/SegmentRegisterOperand.h"
+# include "cpu/operands/ImmediateOperand.h"
+# include "cpu/operands/MemoryOperand.h"
+# include "cpu/operands/ModRmOperand.h"
+# include "cpu/operands/RegisterOperand.h"
+# include "cpu/operands/RelativeOffsetOperand.h"
+# include "cpu/operands/SegmentRegisterOperand.h"
 
 namespace emu::cpu::insts {{
 """)

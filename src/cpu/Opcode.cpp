@@ -10,6 +10,16 @@ Opcode::Opcode(InstructionFetcher fetcher) {
 
 prefixLoop:
   value = fetcher.next<uint8_t>();
+
+  switch (value) {
+    case 0x66:
+    case 0x9b:
+    case 0xf2:
+    case 0xf3:
+      pref = value;
+      break;
+  }
+
   switch (value) {
     case 0xf0:
     case 0xf2:

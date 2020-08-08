@@ -16,6 +16,7 @@ class Opcode {
   // template <typename T>
   // RegisterOperand<T> op_r(Cpu& cpu) const;
 
+  uint8_t pref;
   uint8_t pf[4];
   bool of;
   uint8_t po;
